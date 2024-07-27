@@ -1,5 +1,4 @@
 use postflop_solver::*;
-
 fn main() {
     // ranges of OOP and IP in string format
     // see the documentation of `Range` for more details about the format
@@ -40,7 +39,7 @@ fn main() {
     let mut game = PostFlopGame::with_config(card_config, action_tree).unwrap();
 
     // obtain the private hands
-    let oop_cards = game.private_cards(0);
+    let oop_cards: &[(u8, u8)] = game.private_cards(0);
     let oop_cards_str = holes_to_strings(oop_cards).unwrap();
     assert_eq!(
         &oop_cards_str[..10],
