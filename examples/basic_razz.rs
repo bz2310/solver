@@ -1,23 +1,7 @@
 use postflop_solver::*;
+
 fn main() {
-    // ranges of OOP and IP in string format
-    // see the documentation of `Range` for more details about the format
-    let oop_range = "66+,A8s+,A5s-A4s,AJo+,K9s+,KQo,QTs+,JTs,96s+,85s+,75s+,65s,54s";
-    let ip_range = "QQ-22,AQs-A2s,ATo+,K5s+,KJo+,Q8s+,J8s+,T7s+,96s+,86s+,75s+,64s+,53s+";
-
-    let card_config = CardConfig {
-        range: [oop_range.parse().unwrap(), ip_range.parse().unwrap()],
-        flop: flop_from_str("Td9d6h").unwrap(),
-        turn: card_from_str("Qc").unwrap(),
-        river: NOT_DEALT,
-    };
-
-    // bet sizes -> 60% of the pot, geometric size, and all-in
-    // raise sizes -> 2.5x of the previous bet
-    // see the documentation of `BetSizeOptions` for more details
-    let bet_sizes = BetSizeOptions::try_from(("60%, e, a", "2.5x")).unwrap();
-
-    let tree_config = TreeConfig {
+    let tree_config = StudTreeConfig {
         initial_state: BoardState::Turn, // must match `card_config`
         starting_pot: 200,
         effective_stack: 900,

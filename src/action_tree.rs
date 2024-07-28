@@ -700,7 +700,7 @@ impl ActionTree {
         actions = merge_bet_actions(actions, pot, prev_amount, self.config.merging_threshold);
 
         let player_after_call = match node.board_state {
-            BoardState::River => PLAYER_TERMINAL_FLAG,
+            BoardState::SeventhStreet => PLAYER_TERMINAL_FLAG,
             _ => PLAYER_CHANCE_FLAG | player,
         };
 
