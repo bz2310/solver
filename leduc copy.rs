@@ -33,6 +33,17 @@ enum Action {
     Raise(i32),
     Chance(usize),
 }
+impl fmt::Display for Action {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Action::None => write!(f, "None"),
+            Action::Fold => write!(f, "Fold"),
+            Action::Bet(i32) => write!(f, "Bet(i32)"),
+            Action::Raise(i32) => write!(f, "Raise(i32)"),
+            Action::Chance(usize) => write!(f, "Chance(usize)"),
+        }
+    }
+}
 
 const NUM_PRIVATE_HANDS: usize = 6;
 

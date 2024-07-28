@@ -1,6 +1,7 @@
 use crate::bet_size::*;
 use crate::card::*;
 use crate::mutex_like::*;
+use std::fmt;
 
 #[cfg(feature = "bincode")]
 use bincode::{Decode, Encode};
@@ -41,6 +42,21 @@ pub enum Action {
 
     /// Chance action with a card ID, i.e., the dealing of a turn or river card.
     Chance(Card),
+}
+impl fmt::Display for Action {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let action_str = match *self {
+            Action::None => "None",
+            Action::Fold => "Fold",
+            Action::Check => "Check",
+            Action::Call => "Call",
+            Action::Bet(amount) => &format!("Bet({})", amount),
+            Action::Raise(amount) => &format!("Raise({})", amount),
+            Action::AllIn(amount) => &format!("All-in({})", amount),
+            Action::Chance(ref card) => &format!("Chance({})", card),
+        };
+        write!(f, "{}", action_str)
+    }
 }
 
 /// An enum representing the board state.
