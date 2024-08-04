@@ -60,7 +60,8 @@ mod alloc;
 mod file;
 
 mod action_tree;
-mod action_tree_stud_games;
+//mod action_tree_stud_games;
+mod action_tree_stud_games_barb;
 mod atomic_float;
 mod bet_size;
 mod bunching;
@@ -79,6 +80,7 @@ mod utility;
 pub use file::*;
 
 pub use action_tree::*;
+pub use action_tree_stud_games_barb::*;
 pub use bet_size::*;
 pub use bunching::*;
 pub use card::*;
