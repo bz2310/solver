@@ -484,5 +484,3 @@ fn count_num_action_nodes_recursive(node: &StudActionTreeNode, street: usize, co
         }
     }
 }
-
-
