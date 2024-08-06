@@ -1,5 +1,7 @@
 use crate::card::*;
 use crate::mutex_like::*;
+use std::fmt;
+use crate::range::*;
 
 #[cfg(feature = "bincode")]
 use bincode::{Decode, Encode};
@@ -40,6 +42,20 @@ pub enum StudAction {
 
     /// Chance action with a card ID, i.e., the dealing of a turn or river card.
     Chance((Card, Card)),
+}
+
+impl fmt::Display for StudAction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            StudAction::None => write!(f, "None"),
+            StudAction::Fold => write!(f, "Fold"),
+            StudAction::Check => write!(f, "Check"),
+            StudAction::Call => write!(f, "Call"),
+            StudAction::Bet(amt) => write!(f, "Bet({})", amt),
+            StudAction::Raise(amt) => write!(f, "Raise({})", amt),
+            StudAction::Chance(cards) => write!(f, "Chance({})", hole_to_string(cards).unwrap()),
+        }
+    }
 }
 
 /// An enum representing the board state.
@@ -88,12 +104,20 @@ pub struct StudActionTree {
 
 #[derive(Default)]
 #[cfg_attr(feature = "bincode", derive(Decode, Encode))]
-pub(crate) struct StudActionTreeNode {
-    pub(crate) player_whose_action: u8,
-    pub(crate) board_state: StudBoardState,
-    pub(crate) amount_wagered_so_far_this_game: i32,
-    pub(crate) actions_so_far_this_game: Vec<StudAction>,
-    pub(crate) children: Vec<MutexLike<StudActionTreeNode>>,
+pub struct StudActionTreeNode {
+    player_whose_action: u8,
+    board_state: StudBoardState,
+    amount_wagered_so_far_this_game: i32,
+    actions_so_far_this_game: Vec<StudAction>,
+    children: Vec<MutexLike<StudActionTreeNode>>,
+}
+
+#[derive(Default, Clone)]
+#[cfg_attr(feature = "bincode", derive(Decode, Encode))]
+pub struct StudActionTreeNodeDebug {
+    pub player_whose_action: u8,
+    pub board_state: StudBoardState,
+    pub amount_wagered_so_far_this_game: i32,
 }
 
 struct StudBuildTreeInfo {
@@ -201,7 +225,7 @@ impl StudActionTree {
 
     /// Returns the reference to the current node.
     #[inline]
-    fn current_node(&self) -> &StudActionTreeNode {
+    pub fn current_node(&self) -> &StudActionTreeNode {
         unsafe {
             let mut node = &*self.root.lock() as *const StudActionTreeNode;
             for action in &self.history {
@@ -212,6 +236,23 @@ impl StudActionTree {
                 node = &*(*node).children[index].lock();
             }
             &*node
+        }
+    }
+
+    #[inline]
+    pub fn current_node_debug(&self) -> StudActionTreeNodeDebug {
+        unsafe {
+            let mut node = &*self.root.lock() as *const StudActionTreeNode;
+            for action in &self.history {
+                while (*node).is_chance() {
+                    node = &*(*node).children[0].lock();
+                }
+                let index = (*node).actions_so_far_this_game.iter().position(|x| x == action).unwrap();
+                node = &*(*node).children[index].lock();
+            }
+
+            let this_node = &*node;
+            StudActionTreeNodeDebug{player_whose_action: this_node.player_whose_action, board_state: this_node.board_state, amount_wagered_so_far_this_game: this_node.amount_wagered_so_far_this_game}
         }
     }
 
@@ -240,6 +281,14 @@ impl StudActionTree {
         Ok(())
     }
 
+    #[inline]
+    fn get_bet_size(node: &StudBoardState, curr_config: &StudTreeConfig) -> i32 {
+        match node {
+            StudBoardState::ThirdStreet | StudBoardState::FourthStreet => curr_config.small_bet_size,
+            StudBoardState::FifthStreet | StudBoardState::SixthStreet | StudBoardState::SeventhStreet => curr_config.big_bet_size,
+        }
+    }
+
     /// Builds the action tree.
     #[inline]
     fn build_tree(&mut self) {
@@ -248,18 +297,11 @@ impl StudActionTree {
         let curr_config = self.config();
         *root = StudActionTreeNode::default();
         root.board_state = curr_config.initial_state;
+        root.amount_wagered_so_far_this_game = curr_config.starting_pot_from_antes;
 
         // CR-someday: if we implement all ins make sure to pass in the new
-        self.build_tree_recursive(&mut root, StudBuildTreeInfo::new(curr_config.small_bet_size));
+        self.build_tree_recursive(&mut root, StudBuildTreeInfo::new(StudActionTree::get_bet_size(&curr_config.initial_state, curr_config)));
 
-    }
-
-    #[inline]
-    fn get_bet_size(node: &StudBoardState, curr_config: &StudTreeConfig) -> i32 {
-        match node {
-            StudBoardState::ThirdStreet | StudBoardState::FourthStreet => curr_config.small_bet_size,
-            StudBoardState::FifthStreet | StudBoardState::SixthStreet | StudBoardState::SeventhStreet => curr_config.big_bet_size,
-        }
     }
 
     /// Recursively builds the action tree.
@@ -330,7 +372,7 @@ impl StudActionTree {
                 actions.push(StudAction::Call);
 
                 if info.num_bets_on_this_street < curr_config.bets_cap { 
-                    actions.push(StudAction::Raise(info.bet_size_on_this_street * (info.num_bets_on_this_street + 1))); 
+                    actions.push(StudAction::Raise(info.bet_size_on_this_street * (info.num_bets_on_this_street+1))); 
                 }
             }
             StudAction::Call => {
@@ -363,8 +405,12 @@ impl StudActionTree {
                     amount += info.bet_size_on_this_street;
                     player_after_call
                 }
-                StudAction::Bet(_) | StudAction::Raise(_) => {
+                StudAction::Bet(_) => {
                     amount += info.bet_size_on_this_street;
+                    opponent
+                }
+                StudAction::Raise(_) => {
+                    amount += 2*info.bet_size_on_this_street;
                     opponent
                 }
                 _ => panic!("Unexpected action: {action:?}"),
@@ -437,7 +483,6 @@ impl StudBuildTreeInfo {
             StudAction::Check => {
             }
             StudAction::Call => {
-                num_bets_on_this_street = 0;
             }
             StudAction::Bet(_) => {
                 num_bets_on_this_street += 1;
