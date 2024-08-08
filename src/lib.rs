@@ -62,6 +62,7 @@ mod file;
 mod action_tree;
 //mod action_tree_stud_games;
 mod action_tree_stud_games_barb;
+mod stud_game;
 mod atomic_float;
 mod bet_size;
 mod bunching;

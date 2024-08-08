@@ -7,9 +7,9 @@ use crate::range::*;
 use bincode::{Decode, Encode};
 
 pub(crate) const PLAYER_OOP: u8 = 0;
-//pub(crate) const PLAYER_IP: u8 = 1;
-//pub(crate) const PLAYER_CHANCE: u8 = 2; // only used with `PLAYER_CHANCE_FLAG`
-//pub(crate) const PLAYER_MASK: u8 = 3;
+pub(crate) const PLAYER_IP: u8 = 1;
+pub(crate) const PLAYER_CHANCE: u8 = 2; // only used with `PLAYER_CHANCE_FLAG`
+pub(crate) const PLAYER_MASK: u8 = 3;
 pub(crate) const PLAYER_CHANCE_FLAG: u8 = 4; // chance_player = PLAYER_CHANCE_FLAG | prev_player
 pub(crate) const PLAYER_TERMINAL_FLAG: u8 = 8;
 pub(crate) const PLAYER_FOLD_FLAG: u8 = 24;
@@ -37,7 +37,7 @@ pub enum StudAction {
     /// Raise action
     Raise(i32),
 
-    /// CR-someday: implement. All-in action with a specified amount.
+    /// <TODO>: implement. All-in action with a specified amount.
     /// AllIn(i32),
 
     /// Chance action with a card ID, i.e., the dealing of a turn or river card.
@@ -299,9 +299,8 @@ impl StudActionTree {
         root.board_state = curr_config.initial_state;
         root.amount_wagered_so_far_this_game = curr_config.starting_pot_from_antes;
 
-        // CR-someday: if we implement all ins make sure to pass in the new
+        // <TODO>: if we implement all ins make sure to pass in the new
         self.build_tree_recursive(&mut root, StudBuildTreeInfo::new(StudActionTree::get_bet_size(&curr_config.initial_state, curr_config)));
-
     }
 
     /// Recursively builds the action tree.
@@ -324,7 +323,7 @@ impl StudActionTree {
             // let next_player = StudActionTreeNode::calc_next_player(&node, )
             let _next_player = PLAYER_OOP;
 
-            // Cr-someday: this is another spot to think about all-ins
+            // <TODO>: this is another spot to think about all-ins
             node.actions_so_far_this_game.push(StudAction::Chance((0,0)));
             
             //<TODO> why can we just push default values onto StudActionTreeNode for the last two variables???
