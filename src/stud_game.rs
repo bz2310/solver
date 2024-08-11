@@ -425,13 +425,7 @@ impl StudGame {
                 amount_lose
             };
 
-            let valid_indices = if node.seventh_street != (NOT_DEALT, NOT_DEALT) {
-                &self.valid_indices_seventh[card_pair_to_index(node.turn, node.river)]
-            } else if node.turn != NOT_DEALT {
-                &self.valid_indices_[node.turn as usize]
-            } else {
-                &self.valid_indices_flop
-            };
+            let valid_indices = StudCardConfig::valid_indices(&self, self.private_starting_cards);
 
             let opponent_indices = &valid_indices[player ^ 1];
             for &i in opponent_indices {

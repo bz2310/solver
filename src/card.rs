@@ -87,7 +87,7 @@ impl Default for StudCardConfig {
 
 type PrivateCards = [Vec<(Card, Card)>; 2];
 
-type StudPrivateCards = [Vec<(Card, Card, Card)>; 2];
+type StudPrivateStartingCards = [Vec<(Card, Card)>; 2];
 
 type Indices = [Vec<u16>; 2];
 
@@ -482,10 +482,68 @@ mod tests {
 impl StudCardConfig {
     pub(crate) fn valid_indices(
         &self,
-        private_cards: &StudPrivateCards,
-    ) -> (StudIndices, Vec<StudIndices>, Vec<StudIndices>, Vec<StudIndices>) {
+        private_starting_cards: &StudPrivateStartingCards,
+    ) -> (Vec<StudIndices>) {
+        let board1 = self.third_street.0;
+        let board2 = self.third_street.1;
+        let board3 = self.fourth_street.0;
+        let board4 = self.fourth_street.1;
+        let board5 = self.fifth_street.0;
+        let board6 = self.fifth_street.1;
+        let board7 = self.sixth_street.0;
+        let board8 = self.sixth_street.1;
 
-        // /TODO NEXT
+        let mut ret = [
+            Vec::with_capacity(private_starting_cards[0].len()),
+            Vec::with_capacity(private_starting_cards[1].len()),
+        ];
+
+        let mut board_mask: u64 = 0;
+        if board1 != NOT_DEALT {
+            board_mask |= 1 << board1;
+        }
+        if board2 != NOT_DEALT {
+            board_mask |= 1 << board2;
+        }
+        if board3 != NOT_DEALT {
+            board_mask |= 1 << board3;
+        }
+        if board4 != NOT_DEALT {
+            board_mask |= 1 << board4;
+        }
+        if board5 != NOT_DEALT {
+            board_mask |= 1 << board5;
+        }
+        if board6 != NOT_DEALT {
+            board_mask |= 1 << board6;
+        }
+        if board7 != NOT_DEALT {
+            board_mask |= 1 << board7;
+        }
+        if board8 != NOT_DEALT {
+            board_mask |= 1 << board8;
+        }
+
+        for player in 0..2 {
+            ret[player].extend(
+                private_starting_cards[player]
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, &(c1, c2))| {
+                        let hand_mask: u64 = (1 << c1) | (1 << c2);
+                        if hand_mask & board_mask == 0 {
+                            Some(index as u32)
+                        } else {
+                            None
+                        }
+                    }),
+            );
+
+            ret[player].shrink_to_fit();
+        }
+
+        ret
+    }
 
     pub(crate) fn hand_strength(
         &self,
