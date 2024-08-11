@@ -27,6 +27,12 @@ impl Default for StudCardConfig {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct StudStrengthItem {
+    pub(crate) strength: u32,
+    pub(crate) index: u32,
+}
+
 impl StudCardConfig {
     pub(crate) fn valid_indices(
         &self,
