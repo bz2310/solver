@@ -70,6 +70,12 @@ pub(crate) struct StrengthItem {
     pub(crate) index: u16,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct StudStrengthItem {
+    pub(crate) strength: u32,
+    pub(crate) index: u32,
+}
+
 pub(crate) type SwapList = [Vec<(u16, u16)>; 2];
 
 type IsomorphismData = (
