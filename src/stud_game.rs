@@ -251,7 +251,7 @@ impl GameNode for StudNode {
 
     #[inline]
     fn enable_parallelization(&self) -> bool {
-        self.river == NOT_DEALT
+        self.seventh_street == (NOT_DEALT, NOT_DEALT)
     }
 }
 
@@ -328,9 +328,11 @@ pub struct StudGame {
     same_hand_index: [Vec<u16>; 2],
 
     // indices in `private_cards` that do not conflict with the specified board cards
-    valid_indices_flop: [Vec<u16>; 2],
-    valid_indices_turn: Vec<[Vec<u16>; 2]>,
-    valid_indices_river: Vec<[Vec<u16>; 2]>,
+    valid_indices_third_street: [Vec<u16>; 2],
+    valid_indices_fourth_street: [Vec<u16>; 2],
+    valid_indices_fifth_street: Vec<[Vec<u16>; 2]>,
+    valid_indices_sixth_street: Vec<[Vec<u16>; 2]>,
+    valid_indices_seventh_street: Vec<[Vec<u16>; 2]>,
 
     // hand strength information: indices are stored in ascending strength order
     hand_strength: Vec<[Vec<StrengthItem>; 2]>,
@@ -340,12 +342,21 @@ pub struct StudGame {
     // - `isomorphism_card_*`: list of cards eliminated by the isomorphism
     // - `isomorphism_swap_*`: list of hand index pairs that should be swapped when applying the
     //                         isomorphism with the specified suit
-    isomorphism_ref_turn: Vec<u8>,
-    isomorphism_card_turn: Vec<Card>,
-    isomorphism_swap_turn: [SwapList; 4],
-    isomorphism_ref_river: Vec<Vec<u8>>,
-    isomorphism_card_river: [Vec<Card>; 4],
-    isomorphism_swap_river: [[SwapList; 4]; 4],
+    isomorphism_ref_fourth_street: Vec<u8>,
+    isomorphism_card_fourth_street: Vec<Card>,
+    isomorphism_swap_fourth_street: [SwapList; 4],
+
+    isomorphism_ref_fifth_street: Vec<Vec<u8>>,
+    isomorphism_card_fifth_street: [Vec<Card>; 4],
+    isomorphism_swap_fifth_street: [[SwapList; 4]; 4],
+    
+    isomorphism_ref_sixth_street: Vec<Vec<Vec<u8>>>,
+    isomorphism_card_sixth_street: [[Vec<Card>; 4]; 4],
+    isomorphism_swap_sixth_street: [[[SwapList; 4]; 4]; 4],
+    
+    isomorphism_ref_seventh_street: Vec<Vec<Vec<u8>>>,
+    isomorphism_card_seventh_street: [[Vec<Card>; 4]; 4],
+    isomorphism_swap_seventh_street: [[[SwapList; 4]; 4]; 4],
 
     // store options
     storage_mode: StudBoardState,
@@ -371,11 +382,16 @@ pub struct StudGame {
     action_history: Vec<usize>,
     node_history: Vec<usize>,
     is_normalized_weight_cached: bool,
-    turn: Card,
-    river: Card,
+    fourth_street: (Card, Card),
+    fifth_street: (Card, Card),
+    sixth_street: (Card, Card),
+    seventh_street: (Card, Card),
+    
+    // <TODO> figure out what the swap variables are used for
     turn_swapped_suit: Option<(u8, u8)>,
     turn_swap: Option<u8>,
     river_swap: Option<(u8, u8)>,
+    
     total_bet_amount: [i32; 2],
     weights: [Vec<f32>; 2],
     normalized_weights: [Vec<f32>; 2],
@@ -554,9 +570,9 @@ impl Game for StudGame {
     #[inline]
     fn chance_factor(&self, node: &Self::Node) -> usize {
         if node.turn == NOT_DEALT {
-            45 - self.bunching_num_dead_cards
+            45
         } else {
-            44 - self.bunching_num_dead_cards
+            44
         }
     }
 
@@ -577,10 +593,6 @@ impl Game for StudGame {
         self.state == State::MemoryAllocated && self.storage_mode == BoardState::River
     }
 
-    #[inline]
-    fn is_raked(&self) -> bool {
-        self.tree_config.rake_rate > 0.0 && self.tree_config.rake_cap > 0.0
-    }
 
     #[inline]
     fn isomorphic_chances(&self, node: &Self::Node) -> &[u8] {
