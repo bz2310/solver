@@ -328,14 +328,6 @@ pub struct StudGame {
     private_seventh_street_cards: [Vec<Card>; 2],
     same_hand_index: [Vec<u16>; 2],
 
-<<<<<<< HEAD
-    // indices in `private_cards` that do not conflict with the specified board cards
-    valid_indices_third_street: [Vec<u16>; 2],
-    valid_indices_fourth_street: [Vec<u16>; 2],
-    valid_indices_fifth_street: Vec<[Vec<u16>; 2]>,
-    valid_indices_sixth_street: Vec<[Vec<u16>; 2]>,
-    valid_indices_seventh_street: Vec<[Vec<u16>; 2]>,
-=======
     // indices in `private_starting_cards` that do not conflict with the specified board cards
     valid_indices_third: [Vec<u16>; 2],
     valid_indices_fourth: Vec<[Vec<u16>; 2]>,
@@ -345,7 +337,6 @@ pub struct StudGame {
 
     // indices in private_seventh_street_cards that do not conflict with board
     // valid_indices_seventh:
->>>>>>> refs/remotes/origin/main
 
     // hand strength information: indices are stored in ascending strength order
     hand_strength: Vec<[Vec<StrengthItem>; 2]>,
@@ -354,24 +345,6 @@ pub struct StudGame {
     // - `isomorphism_ref_*`: indices to which the eliminated events should refer
     // - `isomorphism_card_*`: list of cards eliminated by the isomorphism
     // - `isomorphism_swap_*`: list of hand index pairs that should be swapped when applying the
-<<<<<<< HEAD
-    //                         isomorphism with the specified suit
-    isomorphism_ref_fourth_street: Vec<u8>,
-    isomorphism_card_fourth_street: Vec<Card>,
-    isomorphism_swap_fourth_street: [SwapList; 4],
-
-    isomorphism_ref_fifth_street: Vec<Vec<u8>>,
-    isomorphism_card_fifth_street: [Vec<Card>; 4],
-    isomorphism_swap_fifth_street: [[SwapList; 4]; 4],
-    
-    isomorphism_ref_sixth_street: Vec<Vec<Vec<u8>>>,
-    isomorphism_card_sixth_street: [[Vec<Card>; 4]; 4],
-    isomorphism_swap_sixth_street: [[[SwapList; 4]; 4]; 4],
-    
-    isomorphism_ref_seventh_street: Vec<Vec<Vec<u8>>>,
-    isomorphism_card_seventh_street: [[Vec<Card>; 4]; 4],
-    isomorphism_swap_seventh_street: [[[SwapList; 4]; 4]; 4],
-=======
     // //                         isomorphism with the specified suit
     // isomorphism_ref_turn: Vec<u8>,
     // isomorphism_card_turn: Vec<Card>,
@@ -379,7 +352,6 @@ pub struct StudGame {
     // isomorphism_ref_river: Vec<Vec<u8>>,
     // isomorphism_card_river: [Vec<Card>; 4],
     // isomorphism_swap_river: [[SwapList; 4]; 4],
->>>>>>> refs/remotes/origin/main
 
     // store options
     storage_mode: StudBoardState,
@@ -405,18 +377,6 @@ pub struct StudGame {
     action_history: Vec<usize>,
     node_history: Vec<usize>,
     is_normalized_weight_cached: bool,
-<<<<<<< HEAD
-    fourth_street: (Card, Card),
-    fifth_street: (Card, Card),
-    sixth_street: (Card, Card),
-    seventh_street: (Card, Card),
-    
-    // <TODO> figure out what the swap variables are used for
-    turn_swapped_suit: Option<(u8, u8)>,
-    turn_swap: Option<u8>,
-    river_swap: Option<(u8, u8)>,
-    
-=======
     third_street: (Card, Card),
     fourth_street: (Card, Card),
     fifth_street: (Card, Card),
@@ -425,7 +385,6 @@ pub struct StudGame {
     // turn_swapped_suit: Option<(u8, u8)>,
     // turn_swap: Option<u8>,
     // river_swap: Option<(u8, u8)>,
->>>>>>> refs/remotes/origin/main
     total_bet_amount: [i32; 2],
     weights: [Vec<f32>; 2],
     normalized_weights: [Vec<f32>; 2],
@@ -603,12 +562,6 @@ impl Game for StudGame {
 
     #[inline]
     fn chance_factor(&self, node: &Self::Node) -> usize {
-<<<<<<< HEAD
-        if node.turn == NOT_DEALT {
-            45
-        } else {
-            44
-=======
         if node.fourth_street == (NOT_DEALT, NOT_DEALT) {
             46
         } else if node.fifth_street == (NOT_DEALT, NOT_DEALT) {
@@ -617,7 +570,6 @@ impl Game for StudGame {
             42
         } else {
             40
->>>>>>> refs/remotes/origin/main
         }
     }
 
@@ -638,14 +590,11 @@ impl Game for StudGame {
         self.state == State::MemoryAllocated && self.storage_mode == StudBoardState::SeventhStreet
     }
 
-<<<<<<< HEAD
-=======
     #[inline]
     fn is_raked(&self) -> bool {
         false
         // self.tree_config.rake_rate > 0.0 && self.tree_config.rake_cap > 0.0
     }
->>>>>>> refs/remotes/origin/main
 
     #[inline]
     fn isomorphic_chances(&self, node: &Self::Node) -> &[u8] {
