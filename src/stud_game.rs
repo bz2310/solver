@@ -2,19 +2,19 @@ use crate::interface::*;
 use crate::mutex_like::*;
 use std::mem::{self, MaybeUninit};
 
+use crate::action_tree_stud_games_barb::*;
 use crate::card::*;
 use crate::range::*;
 use crate::utility::*;
-use crate::action_tree_stud_games_barb::*;
 
+use std::collections::BTreeMap;
 use std::ptr;
 use std::slice;
-use std::collections::BTreeMap;
 
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
 #[cfg(feature = "bincode")]
 use bincode::{Decode, Encode};
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 
 #[derive(Default)]
 struct BuildTreeInfo {
@@ -33,11 +33,11 @@ struct BuildTreeInfo {
 pub struct StudNode {
     prev_action: StudAction,
     player: u8,
-    third_street: (Card,Card),
-    fourth_street: (Card,Card),
-    fifth_street: (Card,Card),
-    sixth_street: (Card,Card),
-    seventh_street: (Card,Card),
+    third_street: (Card, Card),
+    fourth_street: (Card, Card),
+    fifth_street: (Card, Card),
+    sixth_street: (Card, Card),
+    seventh_street: (Card, Card),
     is_locked: bool,
     amount: i32,
     children_offset: u32,
@@ -261,11 +261,11 @@ impl Default for StudNode {
         Self {
             prev_action: StudAction::None,
             player: PLAYER_OOP,
-            third_street: (NOT_DEALT,NOT_DEALT),
-            fourth_street: (NOT_DEALT,NOT_DEALT),
-            fifth_street: (NOT_DEALT,NOT_DEALT),
-            sixth_street: (NOT_DEALT,NOT_DEALT),
-            seventh_street: (NOT_DEALT,NOT_DEALT),
+            third_street: (NOT_DEALT, NOT_DEALT),
+            fourth_street: (NOT_DEALT, NOT_DEALT),
+            fifth_street: (NOT_DEALT, NOT_DEALT),
+            sixth_street: (NOT_DEALT, NOT_DEALT),
+            seventh_street: (NOT_DEALT, NOT_DEALT),
             is_locked: false,
             amount: 0,
             children_offset: 0,
@@ -324,15 +324,28 @@ pub struct StudGame {
     // computed from configurations
     num_combinations: f64,
     initial_weights: [Vec<f32>; 2],
-    private_cards: [Vec<(Card, Card)>; 2],
+    private_starting_cards: [Vec<(Card, Card)>; 2],
+    private_seventh_street_cards: [Vec<Card>; 2],
     same_hand_index: [Vec<u16>; 2],
 
+<<<<<<< HEAD
     // indices in `private_cards` that do not conflict with the specified board cards
     valid_indices_third_street: [Vec<u16>; 2],
     valid_indices_fourth_street: [Vec<u16>; 2],
     valid_indices_fifth_street: Vec<[Vec<u16>; 2]>,
     valid_indices_sixth_street: Vec<[Vec<u16>; 2]>,
     valid_indices_seventh_street: Vec<[Vec<u16>; 2]>,
+=======
+    // indices in `private_starting_cards` that do not conflict with the specified board cards
+    valid_indices_third: [Vec<u16>; 2],
+    valid_indices_fourth: Vec<[Vec<u16>; 2]>,
+    valid_indices_fifth: Vec<[Vec<u16>; 2]>,
+    valid_indices_sixth: Vec<[Vec<u16>; 2]>,
+    // valid_indices_seventh: Vec<[Vec<u16>; 2]>,
+
+    // indices in private_seventh_street_cards that do not conflict with board
+    // valid_indices_seventh:
+>>>>>>> refs/remotes/origin/main
 
     // hand strength information: indices are stored in ascending strength order
     hand_strength: Vec<[Vec<StrengthItem>; 2]>,
@@ -341,6 +354,7 @@ pub struct StudGame {
     // - `isomorphism_ref_*`: indices to which the eliminated events should refer
     // - `isomorphism_card_*`: list of cards eliminated by the isomorphism
     // - `isomorphism_swap_*`: list of hand index pairs that should be swapped when applying the
+<<<<<<< HEAD
     //                         isomorphism with the specified suit
     isomorphism_ref_fourth_street: Vec<u8>,
     isomorphism_card_fourth_street: Vec<Card>,
@@ -357,6 +371,15 @@ pub struct StudGame {
     isomorphism_ref_seventh_street: Vec<Vec<Vec<u8>>>,
     isomorphism_card_seventh_street: [[Vec<Card>; 4]; 4],
     isomorphism_swap_seventh_street: [[[SwapList; 4]; 4]; 4],
+=======
+    // //                         isomorphism with the specified suit
+    // isomorphism_ref_turn: Vec<u8>,
+    // isomorphism_card_turn: Vec<Card>,
+    // isomorphism_swap_turn: [SwapList; 4],
+    // isomorphism_ref_river: Vec<Vec<u8>>,
+    // isomorphism_card_river: [Vec<Card>; 4],
+    // isomorphism_swap_river: [[SwapList; 4]; 4],
+>>>>>>> refs/remotes/origin/main
 
     // store options
     storage_mode: StudBoardState,
@@ -382,6 +405,7 @@ pub struct StudGame {
     action_history: Vec<usize>,
     node_history: Vec<usize>,
     is_normalized_weight_cached: bool,
+<<<<<<< HEAD
     fourth_street: (Card, Card),
     fifth_street: (Card, Card),
     sixth_street: (Card, Card),
@@ -392,6 +416,16 @@ pub struct StudGame {
     turn_swap: Option<u8>,
     river_swap: Option<(u8, u8)>,
     
+=======
+    third_street: (Card, Card),
+    fourth_street: (Card, Card),
+    fifth_street: (Card, Card),
+    sixtth_street: (Card, Card),
+    seventh_street: (Card, Card),
+    // turn_swapped_suit: Option<(u8, u8)>,
+    // turn_swap: Option<u8>,
+    // river_swap: Option<(u8, u8)>,
+>>>>>>> refs/remotes/origin/main
     total_bet_amount: [i32; 2],
     weights: [Vec<f32>; 2],
     normalized_weights: [Vec<f32>; 2],
@@ -411,8 +445,8 @@ impl StudGame {
         let amount_win = (half_pot) / self.num_combinations;
         let amount_lose = -half_pot / self.num_combinations;
 
-        let player_cards = &self.private_cards[player];
-        let opponent_cards = &self.private_cards[player ^ 1];
+        let player_starting_cards = &self.private_starting_cards[player];
+        let opponent_starting_cards = &self.private_starting_cards[player ^ 1];
 
         let mut cfreach_sum = 0.0;
         let mut cfreach_minus = [0.0; 52];
@@ -432,10 +466,10 @@ impl StudGame {
                 amount_lose
             };
 
-            let valid_indices = if node.river != NOT_DEALT {
-                &self.valid_indices_river[card_pair_to_index(node.turn, node.river)]
+            let valid_indices = if node.seventh_street != (NOT_DEALT, NOT_DEALT) {
+                &self.valid_indices_seventh[card_pair_to_index(node.turn, node.river)]
             } else if node.turn != NOT_DEALT {
-                &self.valid_indices_turn[node.turn as usize]
+                &self.valid_indices_[node.turn as usize]
             } else {
                 &self.valid_indices_flop
             };
@@ -478,63 +512,63 @@ impl StudGame {
             }
         }
         // showdown (optimized for no rake; 2-pass)
-        else if rake == 0.0 {
-            let pair_index = card_pair_to_index(node.turn, node.river);
-            let hand_strength = &self.hand_strength[pair_index];
-            let player_strength = &hand_strength[player];
-            let opponent_strength = &hand_strength[player ^ 1];
+        // else if rake == 0.0 {
+        let pair_index = card_pair_to_index(node.turn, node.river);
+        let hand_strength = &self.hand_strength[pair_index];
+        let player_strength = &hand_strength[player];
+        let opponent_strength = &hand_strength[player ^ 1];
 
-            let valid_player_strength = &player_strength[1..player_strength.len() - 1];
-            let mut i = 1;
+        let valid_player_strength = &player_strength[1..player_strength.len() - 1];
+        let mut i = 1;
 
-            for &StrengthItem { strength, index } in valid_player_strength {
-                unsafe {
-                    while opponent_strength.get_unchecked(i).strength < strength {
-                        let opponent_index = opponent_strength.get_unchecked(i).index as usize;
-                        let cfreach_i = *cfreach.get_unchecked(opponent_index);
-                        if cfreach_i != 0.0 {
-                            let (c1, c2) = *opponent_cards.get_unchecked(opponent_index);
-                            let cfreach_i_f64 = cfreach_i as f64;
-                            cfreach_sum += cfreach_i_f64;
-                            *cfreach_minus.get_unchecked_mut(c1 as usize) += cfreach_i_f64;
-                            *cfreach_minus.get_unchecked_mut(c2 as usize) += cfreach_i_f64;
-                        }
-                        i += 1;
+        for &StrengthItem { strength, index } in valid_player_strength {
+            unsafe {
+                while opponent_strength.get_unchecked(i).strength < strength {
+                    let opponent_index = opponent_strength.get_unchecked(i).index as usize;
+                    let cfreach_i = *cfreach.get_unchecked(opponent_index);
+                    if cfreach_i != 0.0 {
+                        let (c1, c2) = *opponent_cards.get_unchecked(opponent_index);
+                        let cfreach_i_f64 = cfreach_i as f64;
+                        cfreach_sum += cfreach_i_f64;
+                        *cfreach_minus.get_unchecked_mut(c1 as usize) += cfreach_i_f64;
+                        *cfreach_minus.get_unchecked_mut(c2 as usize) += cfreach_i_f64;
                     }
-                    let (c1, c2) = *player_cards.get_unchecked(index as usize);
-                    let cfreach = cfreach_sum
-                        - cfreach_minus.get_unchecked(c1 as usize)
-                        - cfreach_minus.get_unchecked(c2 as usize);
-                    *result.get_unchecked_mut(index as usize) = (amount_win * cfreach) as f32;
+                    i += 1;
                 }
-            }
-
-            cfreach_sum = 0.0;
-            cfreach_minus.fill(0.0);
-            i = opponent_strength.len() - 2;
-
-            for &StrengthItem { strength, index } in valid_player_strength.iter().rev() {
-                unsafe {
-                    while opponent_strength.get_unchecked(i).strength > strength {
-                        let opponent_index = opponent_strength.get_unchecked(i).index as usize;
-                        let cfreach_i = *cfreach.get_unchecked(opponent_index);
-                        if cfreach_i != 0.0 {
-                            let (c1, c2) = *opponent_cards.get_unchecked(opponent_index);
-                            let cfreach_i_f64 = cfreach_i as f64;
-                            cfreach_sum += cfreach_i_f64;
-                            *cfreach_minus.get_unchecked_mut(c1 as usize) += cfreach_i_f64;
-                            *cfreach_minus.get_unchecked_mut(c2 as usize) += cfreach_i_f64;
-                        }
-                        i -= 1;
-                    }
-                    let (c1, c2) = *player_cards.get_unchecked(index as usize);
-                    let cfreach = cfreach_sum
-                        - cfreach_minus.get_unchecked(c1 as usize)
-                        - cfreach_minus.get_unchecked(c2 as usize);
-                    *result.get_unchecked_mut(index as usize) += (amount_lose * cfreach) as f32;
-                }
+                let (c1, c2) = *player_cards.get_unchecked(index as usize);
+                let cfreach = cfreach_sum
+                    - cfreach_minus.get_unchecked(c1 as usize)
+                    - cfreach_minus.get_unchecked(c2 as usize);
+                *result.get_unchecked_mut(index as usize) = (amount_win * cfreach) as f32;
             }
         }
+
+        cfreach_sum = 0.0;
+        cfreach_minus.fill(0.0);
+        i = opponent_strength.len() - 2;
+
+        for &StrengthItem { strength, index } in valid_player_strength.iter().rev() {
+            unsafe {
+                while opponent_strength.get_unchecked(i).strength > strength {
+                    let opponent_index = opponent_strength.get_unchecked(i).index as usize;
+                    let cfreach_i = *cfreach.get_unchecked(opponent_index);
+                    if cfreach_i != 0.0 {
+                        let (c1, c2) = *opponent_cards.get_unchecked(opponent_index);
+                        let cfreach_i_f64 = cfreach_i as f64;
+                        cfreach_sum += cfreach_i_f64;
+                        *cfreach_minus.get_unchecked_mut(c1 as usize) += cfreach_i_f64;
+                        *cfreach_minus.get_unchecked_mut(c2 as usize) += cfreach_i_f64;
+                    }
+                    i -= 1;
+                }
+                let (c1, c2) = *player_cards.get_unchecked(index as usize);
+                let cfreach = cfreach_sum
+                    - cfreach_minus.get_unchecked(c1 as usize)
+                    - cfreach_minus.get_unchecked(c2 as usize);
+                *result.get_unchecked_mut(index as usize) += (amount_lose * cfreach) as f32;
+            }
+        }
+        // }
     }
 }
 
@@ -569,10 +603,21 @@ impl Game for StudGame {
 
     #[inline]
     fn chance_factor(&self, node: &Self::Node) -> usize {
+<<<<<<< HEAD
         if node.turn == NOT_DEALT {
             45
         } else {
             44
+=======
+        if node.fourth_street == (NOT_DEALT, NOT_DEALT) {
+            46
+        } else if node.fifth_street == (NOT_DEALT, NOT_DEALT) {
+            44
+        } else if node.sixth_street == (NOT_DEALT, NOT_DEALT) {
+            42
+        } else {
+            40
+>>>>>>> refs/remotes/origin/main
         }
     }
 
@@ -590,9 +635,17 @@ impl Game for StudGame {
 
     #[inline]
     fn is_ready(&self) -> bool {
-        self.state == State::MemoryAllocated && self.storage_mode == BoardState::River
+        self.state == State::MemoryAllocated && self.storage_mode == StudBoardState::SeventhStreet
     }
 
+<<<<<<< HEAD
+=======
+    #[inline]
+    fn is_raked(&self) -> bool {
+        false
+        // self.tree_config.rake_rate > 0.0 && self.tree_config.rake_cap > 0.0
+    }
+>>>>>>> refs/remotes/origin/main
 
     #[inline]
     fn isomorphic_chances(&self, node: &Self::Node) -> &[u8] {
