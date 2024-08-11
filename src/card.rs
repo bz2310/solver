@@ -89,6 +89,8 @@ type PrivateCards = [Vec<(Card, Card)>; 2];
 
 type StudPrivateStartingCards = [Vec<(Card, Card)>; 2];
 
+type StudPrivateSeventhCards = [Card; 2];
+
 type Indices = [Vec<u16>; 2];
 
 type StudIndices = [Vec<u32>; 2];
@@ -97,6 +99,12 @@ type StudIndices = [Vec<u32>; 2];
 pub(crate) struct StrengthItem {
     pub(crate) strength: u16,
     pub(crate) index: u16,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct StudStrengthItem {
+    pub(crate) strength: u32,
+    pub(crate) index: u32,
 }
 
 pub(crate) type SwapList = [Vec<(u16, u16)>; 2];
@@ -547,9 +555,10 @@ impl StudCardConfig {
 
     pub(crate) fn hand_strength(
         &self,
-        private_cards: &PrivateCards,
-    ) -> Vec<[Vec<StrengthItem>; 2]> {
-        let mut ret = vec![Default::default(); 52 * 51 / 2];
+        private_hole_cards: &StudPrivateStartingCards,
+        private_seventh_cards: &StudPrivateSeventhCards,
+    ) -> Vec<[Vec<StudStrengthItem>; 3]> {
+        let mut ret = vec![Default::default(); 52 * 51 * 50 / 6];
 
         let mut board = Hand::new();
         for &card in &self.flop {
